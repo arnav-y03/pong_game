@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'UI/main_screen.dart';
+import 'package:pin_ball_game/UI/select_score.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,6 +10,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: MainScreen());
+    return MaterialApp(home: StartScreen());
   }
 }

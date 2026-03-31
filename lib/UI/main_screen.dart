@@ -1,40 +1,53 @@
 import 'dart:async';
-
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final int maxScore;
+
+  const MainScreen({super.key, required this.maxScore});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
 class _MainScreenState extends State<MainScreen> {
-  double ballX = 200; //verticall
-  double ballY = 200; //horizontal
+  double ballX = 200;
+  double ballY = 200;
 
-  double dx = 3; // horizontal speed
-  double dy = 3; // vertical speed
+  double dx = 8;
+  double dy = 0;
 
   double leftPaddleY = 100;
   double rightPaddleY = 100;
 
   double paddleHeight = 80;
 
+  int leftScore = 0;
+  int rightScore = 0;
+
   bool gameOver = false;
-  int leftCount = 0;
-  int rightCount = 0;
+  String winner = "";
 
-  String winText = "";
+  int seconds = 0;
 
+  late Timer gameLoop;
   late Timer timer;
 
   @override
   void initState() {
     super.initState();
 
-    timer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+    gameLoop = Timer.periodic(const Duration(milliseconds: 16), (_) {
       updateGame();
+    });
+
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!gameOver) {
+        setState(() {
+          seconds++;
+        });
+      }
     });
   }
 
@@ -42,85 +55,121 @@ class _MainScreenState extends State<MainScreen> {
     if (gameOver) return;
 
     setState(() {
+      double width = MediaQuery.of(context).size.width;
+      double height = MediaQuery.of(context).size.height;
+
       ballX += dx;
       ballY += dy;
 
-      double screenWidth = MediaQuery.of(context).size.width;
-      double screenHeight = MediaQuery.of(context).size.height;
-
-      /// Top & Bottom bounce horizontall
-      if (ballY <= 0 || ballY >= screenHeight - 20) {
+      //top & bottomm
+      if (ballY <= 0 || ballY >= height - 20) {
         dy = -dy;
       }
 
-      /// LEFT paddle
+      //left paddle
       if (ballX <= 20 &&
           ballY >= leftPaddleY &&
           ballY <= leftPaddleY + paddleHeight) {
-        dx = -dx;
-        leftCount++;
+        dx = dx.abs();
+
+        dy = (Random().nextDouble() * 4) - 2;
+
+        dx *= 1.05;
+
+        dx = dx.clamp(-20, 20);
       }
 
-      /// RIGHT paddle hit
-      if (ballX >= screenWidth - 30 &&
+      if (ballX >= width - 30 &&
           ballY >= rightPaddleY &&
           ballY <= rightPaddleY + paddleHeight) {
-        dx = -dx;
-        rightCount++;
+        dx = -dx.abs();
+
+        dy = (Random().nextDouble() * 2) - 1;
+
+        dx *= 1.05;
+
+        dx = dx.clamp(-20, 20);
       }
 
-      /// Game over
-      if (ballX < 0 || ballX > screenWidth) {
+      //left miss right getts
+      if (ballX <= 0) {
+        rightScore++;
+
+        ballX = width / 2;
+        ballY = height / 2;
+
+        dx = 10;
+        dy = (Random().nextDouble() * 4) - 2;
+      }
+
+      //right miss right get
+      if (ballX >= width - 20) {
+        leftScore++;
+
+        ballX = width / 2;
+        ballY = height / 2;
+
+        dx = -10;
+        dy = (Random().nextDouble() * 2) - 1;
+      }
+
+      if (leftScore >= widget.maxScore) {
         gameOver = true;
-
-        if (leftCount > rightCount) {
-          winText = "Blue Wins";
-        } else if (rightCount > leftCount) {
-          winText = 'Red Wins';
-        } else {
-          winText = 'Draw';
-        }
+        winner = "Blue Wins";
       }
+
+      if (rightScore >= widget.maxScore) {
+        gameOver = true;
+        winner = "Red Wins";
+      }
+    });
+  }
+
+  void resetGame() {
+    setState(() {
+      ballX = 200;
+      ballY = 200;
+
+      dx = 8;
+      dy = (Random().nextDouble() * 4) - 2;
+
+      leftScore = 0;
+      rightScore = 0;
+
+      seconds = 0;
+      gameOver = false;
+      winner = "";
     });
   }
 
   @override
   void dispose() {
+    gameLoop.cancel();
     timer.cancel();
     super.dispose();
   }
 
-  void resetGame() {
-    setState(() {
-      ballX = 100;
-      ballY = 100;
-      dx = 3;
-      dy = 3;
-      gameOver = false;
-      leftCount = 0;
-      rightCount = 0;
-      winText = '';
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+    double height = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
         onPanUpdate: (details) {
           setState(() {
-            if (details.localPosition.dx <
-                MediaQuery.of(context).size.width / 2) {
+            if (details.localPosition.dx < width / 2) {
               leftPaddleY += details.delta.dy;
+              leftPaddleY = leftPaddleY.clamp(0, height - paddleHeight);
             } else {
               rightPaddleY += details.delta.dy;
+              rightPaddleY = rightPaddleY.clamp(0, height - paddleHeight);
             }
           });
         },
         child: Stack(
           children: [
-            /// Ball
             Positioned(
               left: ballX,
               top: ballY,
@@ -134,7 +183,6 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
 
-            /// Left Paddle
             Positioned(
               left: 10,
               top: leftPaddleY,
@@ -144,20 +192,7 @@ class _MainScreenState extends State<MainScreen> {
                 color: Colors.blue,
               ),
             ),
-            Positioned(
-              top: 40,
-              left: 50,
-              child: Text(
-                "$leftCount",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
 
-            /// Right Paddle
             Positioned(
               right: 10,
               top: rightPaddleY,
@@ -167,15 +202,33 @@ class _MainScreenState extends State<MainScreen> {
                 color: Colors.red,
               ),
             ),
+
+            Positioned(
+              top: 40,
+              left: 50,
+              child: Text(
+                "$leftScore",
+                style: const TextStyle(color: Colors.white, fontSize: 30),
+              ),
+            ),
+
             Positioned(
               top: 40,
               right: 50,
               child: Text(
-                "$rightCount",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
+                "$rightScore",
+                style: const TextStyle(color: Colors.white, fontSize: 30),
+              ),
+            ),
+
+            Positioned(
+              top: 40,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Text(
+                  "$seconds s",
+                  style: const TextStyle(color: Colors.white, fontSize: 20),
                 ),
               ),
             ),
@@ -186,8 +239,13 @@ class _MainScreenState extends State<MainScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      winText,
+                      winner,
                       style: const TextStyle(color: Colors.white, fontSize: 24),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      "Time: $seconds s",
+                      style: const TextStyle(color: Colors.white),
                     ),
                     const SizedBox(height: 20),
                     ElevatedButton(
@@ -197,15 +255,6 @@ class _MainScreenState extends State<MainScreen> {
                   ],
                 ),
               ),
-
-            // /// Game Over UI
-            // if (gameOver)
-            //   Center(
-            //     child: ElevatedButton(
-            //       onPressed: resetGame,
-            //       child: const Text("Restart"),
-            //     ),
-            //   ),
           ],
         ),
       ),
