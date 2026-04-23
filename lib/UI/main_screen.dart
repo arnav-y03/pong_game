@@ -73,13 +73,29 @@ class _MainScreenState extends State<MainScreen> {
         dy = -dy;
       }
 
-      double racketCenter = leftY + racketHeight / 2;
-      double ballCenter = ballY + 10;
+      // double racketCenter = leftY + racketHeight / 2;
+      // double ballCenter = ballY + 10;
 
-      if (racketCenter < ballCenter) {
-        leftY += 4;
-      } else if (racketCenter > ballCenter) {
-        leftY -= 4;
+      // double autoRacketSpeed = 2.5;
+
+      // if (racketCenter < ballCenter) {
+      //   leftY += autoRacketSpeed;
+      // } else if (racketCenter > ballCenter) {
+      //   leftY -= autoRacketSpeed;
+      // }
+
+      if (dx < 0) {
+        double autoRacketSpeed = 1.5;
+        double ballPos = Random().nextDouble() * 30 - 15;
+        double target = ballY + ballPos;
+        double racketCenter = leftY + racketHeight / 2;
+        if (racketCenter < target) {
+          leftY += autoRacketSpeed;
+        } else if (racketCenter > target) {
+          leftY -= autoRacketSpeed;
+        }
+
+        leftY = leftY.clamp(0, boardHeight - racketHeight);
       }
 
       // left racket
@@ -92,7 +108,7 @@ class _MainScreenState extends State<MainScreen> {
         dx = dx.abs() * speedIncreaseFactor;
 
         //dx = dx > 0 ? dx + 1 : dx - 1;
-        //dy = (Random().nextDouble() * 6) - 4 * speedIncreaseFactor;
+        dy = (Random().nextDouble() * 6) - 4 * speedIncreaseFactor;
 
         dx = dx.clamp(-maxspeed, maxspeed);
         dy = dy.clamp(-maxspeed, maxspeed);
@@ -107,9 +123,9 @@ class _MainScreenState extends State<MainScreen> {
         ballX = rightX - 20;
         // dx = -dx.abs() * speedIncreaseFactor;
         dx = -dx.abs() * speedIncreaseFactor;
-        //dx = dx > 0 ? dx + 1 : dx - 1;
+        // dx = dx > 0 ? dx + 1 : dx - 1;
 
-        //dy = ((Random().nextDouble() * 6) - 4) * speedIncreaseFactor;
+        dy = ((Random().nextDouble() * 6) - 4) * speedIncreaseFactor;
 
         dx = dx.clamp(-maxspeed, maxspeed);
         dy = dy.clamp(-maxspeed, maxspeed);
